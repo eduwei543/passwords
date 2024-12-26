@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>水林國中魔法學院 - 登入頁面</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .login-container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .school-title {
+            text-align: center;
+            color: #1e40af;
+            margin-bottom: 10px;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .login-title {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333;
+            font-size: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+        }
+
+        input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #1677ff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background-color: #4096ff;
+        }
+
+        .message {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #fff7e6;
+            border-radius: 4px;
+            color: #876800;
+            text-align: center;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h1 class="school-title">水林國中魔法學院</h1>
+        <h2 class="login-title">使用者登入</h2>
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="username">帳號</label>
+                <input type="text" id="username" placeholder="請輸入帳號">
+            </div>
+            <div class="form-group">
+                <label for="password">密碼</label>
+                <input type="password" id="password" placeholder="請輸入密碼">
+            </div>
+            <button type="submit">登入</button>
+            <div id="message" class="message">
+                文西(DaVinci), 忘記密碼了嗎？
+            </div>
+        </form>
+    </div>
+
+    <script>
+        const usernameInput = document.getElementById('username');
+        const loginForm = document.getElementById('loginForm');
+        const message = document.getElementById('message');
+
+        usernameInput.addEventListener('click', function() {
+            this.value = '達文西(DaVinci)';
+        });
+
+        loginForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            message.style.display = 'block';
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interleaving穿插法</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+        }
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            padding: 10px 20px;
+            border: none;
+            background-color: #007BFF;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #result {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Interleaving穿插法</h1>
+        <label for="string1">輸入第一組字串：</label>
+        <input type="text" id="string1" placeholder="例如：teacher">
+        <label for="string2">輸入第二組字串：</label>
+        <input type="text" id="string2" placeholder="例如：1131021">
+        <button onclick="interleaveStrings()">Encode</button>
+        <div id="result"></div>
+        <div id="coloredResult"></div>
+    </div>
+
+    <script>
+        function interleaveStrings() {
+            const string1 = document.getElementById("string1").value;
+            const string2 = document.getElementById("string2").value;
+            let result = "";
+            let coloredResult = "";
+
+            const maxLength = Math.max(string1.length, string2.length);
+
+            for (let i = 0; i < maxLength; i++) {
+                if (i < string1.length) {
+                    result += string1[i];
+                    coloredResult += `<span style="color: blue;">${string1[i]}</span>`;
+                }
+                if (i < string2.length) {
+                    result += string2[i];
+                    coloredResult += `<span style="color: red;">${string2[i]}</span>`;
+                }
+            }
+
+            document.getElementById("result").innerText = "穿插編碼結果: " + result;
+            document.getElementById("coloredResult").innerHTML = "顏色標示結果: " + coloredResult;
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Caesar Cipher Practice</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            height: 100vh;
+            background: linear-gradient(to bottom, #e6f7ff, #b3e0ff);
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+            position: relative;
+        }
+        h1 {
+            color: #1e90ff;
+            font-size: 3.5em;
+            text-shadow: 3px 3px 5px rgba(0, 0, 0, 0.2);
+            margin-bottom: 20px;
+            display: inline-block;
+        }
+        .card {
+            background-color: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            text-align: center;
+        }
+        label {
+            font-weight: bold;
+            font-size: 1.2em;
+            color: #333;
+        }
+        #originalText {
+            font-size: 2.5em;
+            color: #dc143c;
+            text-shadow: 1px 1px #ffa07a;
+            margin-bottom: 20px;
+        }
+        input[type="number"], input[type="text"] {
+            padding: 12px;
+            margin: 10px;
+            border: 2px solid #4682b4;
+            border-radius: 10px;
+            font-size: 1.2em;
+            width: calc(100% - 40px);
+            max-width: 300px;
+            box-sizing: border-box;
+        }
+        button {
+            padding: 15px 25px;
+            margin: 20px;
+            background-color: #1e90ff;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1.3em;
+            box-shadow: 3px 3px 8px #888888;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+        button:hover {
+            background-color: #5599ff;
+            transform: scale(1.05);
+        }
+        #result {
+            font-size: 1.5em;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+        #timer, #score {
+            font-size: 1.5em;
+            margin-top: 10px;
+        }
+        #designedBy {
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            font-size: 1.2em;
+            color: #333;
+            font-style: italic;
+        }
+        #instructionsButton {
+            font-size: 1.5em;
+            cursor: pointer;
+            position: absolute;
+            top: 20px;
+            left: 20px;
+        }
+        #instructions {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+            font-size: 1.2em;
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-1deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            30% { transform: translate(3px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+            50% { transform: translate(-1px, 2px) rotate(-1deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            70% { transform: translate(3px, 1px) rotate(-1deg); }
+            80% { transform: translate(-1px, -1px) rotate(1deg); }
+            90% { transform: translate(1px, 2px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
+        }
+        .highlight {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <script>
+        let timerInterval;
+        let timeElapsed = 0;
+        let score = 0;
+        let timerRunning = false;
+
+        // Function to generate a random alphanumeric string of length 6
+        function generateRandomString() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            let result = '';
+            for (let i = 0; i < 6; i++) {
+                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            document.getElementById("originalText").innerText = result;
+            // Set a random shift value between 1 and 3
+            const randomShift = Math.floor(Math.random() * 3) + 1;
+            document.getElementById("shiftValue").value = randomShift;
+            resetTimer();
+            startTimer();
+        }
+
+        // Function to apply Caesar Cipher shift
+        function caesarCipherShift(text, shift) {
+            let result = '';
+            for (let i = 0; i < text.length; i++) {
+                let char = text.charAt(i);
+                if (char >= 'a' && char <= 'z') {
+                    result += String.fromCharCode((char.charCodeAt(0) - 'a'.charCodeAt(0) + shift) % 26 + 'a'.charCodeAt(0));
+                } else if (char >= 'A' && char <= 'Z') {
+                    result += String.fromCharCode((char.charCodeAt(0) - 'A'.charCodeAt(0) + shift) % 26 + 'A'.charCodeAt(0));
+                } else if (char >= '0' && char <= '9') {
+                    result += String.fromCharCode((char.charCodeAt(0) - '0'.charCodeAt(0) + shift) % 10 + '0'.charCodeAt(0));
+                } else {
+                    result += char;
+                }
+            }
+            return result;
+        }
+
+        // Function to check the student's encrypted input
+        function checkAnswer() {
+            const originalText = document.getElementById("originalText").innerText;
+            const studentAnswer = document.getElementById("studentInput").value;
+            const shift = parseInt(document.getElementById("shiftValue").value);
+            const correctAnswer = caesarCipherShift(originalText, shift);
+
+            if (studentAnswer === correctAnswer) {
+                document.getElementById("result").innerText = "Correct! Well done.";
+                document.getElementById("result").style.color = "green";
+                launchConfetti();
+                stopTimer();
+                updateScore();
+            } else {
+                highlightDifferences(correctAnswer, studentAnswer);
+                document.getElementById("result").innerText = "Incorrect. Try again.";
+                document.getElementById("result").style.color = "red";
+                shakeScreen();
+            }
+        }
+
+        // Function to highlight incorrect characters
+        function highlightDifferences(correctAnswer, studentAnswer) {
+            let highlightedText = '';
+            for (let i = 0; i < correctAnswer.length; i++) {
+                if (studentAnswer[i] !== correctAnswer[i]) {
+                    highlightedText += `<span class="highlight">${studentAnswer[i] || ''}</span>`;
+                } else {
+                    highlightedText += studentAnswer[i] || '';
+                }
+            }
+            document.getElementById("studentInput").value = ''; // Clear input field
+            document.getElementById("result").innerHTML += `<br>Incorrect characters highlighted: ${highlightedText}`;
+        }
+
+        // Function to shake the screen when the answer is incorrect
+        function shakeScreen() {
+            document.querySelector('.card').style.animation = "shake 0.5s";
+            setTimeout(() => {
+                document.querySelector('.card').style.animation = "none";
+            }, 500);
+        }
+
+        // Function to launch confetti when the answer is correct
+        function launchConfetti() {
+            confetti({
+                particleCount: 150,
+                spread: 70,
+                origin: { y: 0.6 }
+            });
+        }
+
+        // Timer functions
+        function startTimer() {
+            if (!timerRunning) {
+                timerRunning = true;
+                timerInterval = setInterval(() => {
+                    timeElapsed++;
+                    document.getElementById("timer").innerText = `Time: ${timeElapsed} seconds`;
+                }, 1000);
+            }
+        }
+
+        function stopTimer() {
+            clearInterval(timerInterval);
+            timerRunning = false;
+        }
+
+        function resetTimer() {
+            stopTimer();
+            timeElapsed = 0;
+            document.getElementById("timer").innerText = "Time: 0 seconds";
+        }
+
+        // Score functions
+        function updateScore() {
+            score++;
+            document.getElementById("score").innerText = `Score: ${score}`;
+        }
+
+        // Toggle the instructions
+        function toggleInstructions() {
+            const instructions = document.getElementById("instructions");
+            if (instructions.style.display === "none" || instructions.style.display === "") {
+                instructions.style.display = "block";
+            } else {
+                instructions.style.display = "none";
+            }
+        }
+
+        // Generate a random string when the page loads
+        window.onload = function() {
+            generateRandomString();
+            document.getElementById("score").innerText = `Score: ${score}`;
+            document.getElementById("timer").innerText = "Time: 0 seconds";
+        }
+    </script>
+</head>
+<body>
+    <div id="designedBy">Designed by: WEI</div>
+    <div id="instructionsButton" onclick="toggleInstructions()">📢</div>
+    <div class="card">
+        <h1>Caesar Cipher Practice (字母位移法)</h1>
+        <div id="instructions">
+            Encrypt the text by shifting each character by the given shift value.<br>
+            將文本中的每個字母根據給定的位移值進行加密。
+        </div>
+        <p>Random Original Text: <span id="originalText"></span></p>
+        <label for="shiftValue">Shift Value: </label>
+        <input type="number" id="shiftValue" value="1" min="1" max="3" readonly>
+        <br><br>
+        <label for="studentInput">Enter Encrypted Text: </label>
+        <input type="text" id="studentInput">
+        <button onclick="checkAnswer()">Check Answer</button>
+        <p id="result"></p>
+        <p id="timer"></p>
+        <p id="score"></p>
+        <br>
+        <button onclick="generateRandomString()">Generate New Text</button>
+    </div>
+</body>
+</html>
