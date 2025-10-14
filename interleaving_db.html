@@ -337,17 +337,25 @@
         window.checkAnswer = function() {
             const studentAnswer = game.elements.studentInput.value;
             if (!studentAnswer || game.elements.studentInput.disabled) return;
+            
+            // Disable controls immediately to prevent spamming
+            game.elements.studentInput.disabled = true;
+            game.elements.checkAnswerBtn.disabled = true;
+
             game.totalAttempts++;
             game.elements.attemptsDisplay.innerText = game.totalAttempts;
             updatePlayerScoreInFirestore();
-            if (studentAnswer === game.correctAnswer) handleCorrectAnswer();
-            else handleIncorrectAnswer(studentAnswer);
+
+            if (studentAnswer === game.correctAnswer) {
+                handleCorrectAnswer();
+            } else {
+                handleIncorrectAnswer(studentAnswer);
+            }
         }
         
         function handleCorrectAnswer() {
             stopTimer();
-            game.elements.studentInput.disabled = true;
-            game.elements.checkAnswerBtn.disabled = true;
+            // Controls are already disabled from checkAnswer
 
             if (game.isDecryptMode) {
                 if (game.decryptLevel <= game.totalLevels) game.decryptLevel++;
@@ -363,8 +371,7 @@
 
         function handleIncorrectAnswer(studentAnswer) {
             stopTimer();
-            game.elements.studentInput.disabled = true;
-            game.elements.checkAnswerBtn.disabled = true;
+            // Controls are already disabled from checkAnswer
             game.elements.card.classList.add('shake');
             let feedback = `<span class="text-red-600">Incorrect. (不正確)</span><br><br>Correct Answer (正確答案):<br><strong class="text-blue-600 font-mono">${game.correctAnswer}</strong><br><br>Your Answer (你的答案):<br>`;
             let highlightedAnswer = '';
@@ -425,26 +432,34 @@
         // --- Leaderboard ---
         function listenForLeaderboardUpdates() {
             if (!db) return; 
-            const year = new Date().getFullYear();
-            const leaderboardCollectionName = `leaderboard-${year}`;
-            game.elements.leaderboardTitle.innerText = `${year} 即時排行榜`;
+            try {
+                const year = new Date().getFullYear();
+                const leaderboardCollectionName = `leaderboard-${year}`;
+                game.elements.leaderboardTitle.innerText = `${year} 即時排行榜`;
 
-            const appId = "caesar-cipher-game-leaderboard";
-            const leaderboardCollection = collection(db, `/artifacts/${appId}/public/data/${leaderboardCollectionName}`);
-            
-            onSnapshot(leaderboardCollection, (snapshot) => {
-                const players = [];
-                snapshot.forEach(doc => players.push({ id: doc.id, ...doc.data() }));
+                const appId = "caesar-cipher-game-leaderboard";
+                const leaderboardCollection = collection(db, `/artifacts/${appId}/public/data/${leaderboardCollectionName}`);
+                
+                onSnapshot(leaderboardCollection, (snapshot) => {
+                    const players = [];
+                    snapshot.forEach(doc => players.push({ id: doc.id, ...doc.data() }));
 
-                players.sort((a, b) => {
-                    const scoreA = (a.encryptLevel - 1) + (a.decryptLevel - 1);
-                    const scoreB = (b.encryptLevel - 1) + (b.decryptLevel - 1);
-                    if (scoreB !== scoreA) return scoreB - scoreA;
-                    return a.totalAttempts - b.totalAttempts;
+                    players.sort((a, b) => {
+                        const scoreA = (a.encryptLevel - 1) + (a.decryptLevel - 1);
+                        const scoreB = (b.encryptLevel - 1) + (b.decryptLevel - 1);
+                        if (scoreB !== scoreA) return scoreB - scoreA;
+                        return a.totalAttempts - b.totalAttempts;
+                    });
+
+                    renderLeaderboard(players);
+                }, (error) => {
+                    console.error("Leaderboard snapshot error:", error);
+                    game.elements.leaderboardBody.innerHTML = `<p class="text-center text-red-500 p-4">排行榜讀取錯誤。請檢查安全規則。</p>`;
                 });
-
-                renderLeaderboard(players);
-            });
+            } catch (error) {
+                console.error("Failed to set up leaderboard listener:", error);
+                game.elements.leaderboardBody.innerHTML = `<p class="text-center text-red-500 p-4">無法設定排行榜監聽。</p>`;
+            }
         }
         
         function renderLeaderboard(players) {
