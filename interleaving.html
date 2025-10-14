@@ -1,83 +1,181 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interleaving穿插法</title>
+    <title>Interleaving 穿插法引導式學習平台</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        /* 使用 Google Fonts 的 Inter 字體來美化 */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
         body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            background-color: #f0f0f0;
+            font-family: 'Inter', sans-serif;
         }
-        .container {
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-        input[type="text"] {
-            width: 100%;
-            padding: 10px;
-            margin: 10px 0;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-        button {
-            padding: 10px 20px;
-            border: none;
-            background-color: #007BFF;
-            color: white;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #0056b3;
-        }
-        #result {
-            margin-top: 20px;
-            font-weight: bold;
+        .btn {
+            @apply w-full px-4 py-3 text-white font-bold rounded-md transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:bg-gray-400 disabled:scale-100;
         }
     </style>
 </head>
-<body>
-    <div class="container">
-        <h1>Interleaving穿插法</h1>
-        <label for="string1">輸入第一組字串：</label>
-        <input type="text" id="string1" placeholder="例如：teacher">
-        <label for="string2">輸入第二組字串：</label>
-        <input type="text" id="string2" placeholder="例如：1131021">
-        <button onclick="interleaveStrings()">Encode</button>
-        <div id="result"></div>
-        <div id="coloredResult"></div>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen py-10 relative">
+    <div class="absolute top-4 right-4 text-xs text-gray-400 font-mono">
+        Sljs水林國中資訊科技-by WEI
+    </div>
+    <div class="bg-white p-8 rounded-xl shadow-lg max-w-lg w-full">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-2">Interleaving穿插法─引導式學習</h1>
+        <p class="text-center text-gray-500 mb-8">請設定一組英文字及另一組數字，一步步學習穿插法的原理！</p>
+        
+        <!-- 輸入區 -->
+        <div class="space-y-4 border-b pb-8 mb-8">
+            <div>
+                <label for="string1" class="block text-sm font-medium text-gray-700 mb-1">第一組字串 (藍色)</label>
+                <input type="text" id="string1" placeholder="例如：teacher" oninput="setupAnimation()" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+            </div>
+            <div>
+                <label for="string2" class="block text-sm font-medium text-gray-700 mb-1">第二組字串 (紅色)</label>
+                <input type="text" id="string2" placeholder="例如：1234567" oninput="setupAnimation()" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500 transition">
+            </div>
+        </div>
+
+        <!-- Canvas 動畫區 -->
+        <div class="my-4">
+            <canvas id="previewCanvas" width="450" height="150" class="w-full border border-gray-200 rounded-md bg-gray-50"></canvas>
+        </div>
+        
+        <!-- 控制區 -->
+        <div class="grid grid-cols-2 gap-4">
+            <button id="nextStepBtn" onclick="nextStep()" class="btn bg-blue-500 hover:bg-blue-600 focus:ring-blue-500">開始</button>
+            <button onclick="setupAnimation()" class="btn bg-gray-500 hover:bg-gray-600 focus:ring-gray-500">重設</button>
+        </div>
+        <div id="explanation" class="text-center mt-4 min-h-[4rem] p-2 flex items-center justify-center text-gray-600 bg-gray-100 rounded-md">
+            請先輸入兩組字串。
+        </div>
+
     </div>
 
     <script>
-        function interleaveStrings() {
+        const canvas = document.getElementById('previewCanvas');
+        const ctx = canvas.getContext('2d');
+        const nextStepBtn = document.getElementById('nextStepBtn');
+        const explanationDiv = document.getElementById('explanation');
+
+        let string1Chars = [], string2Chars = [];
+        let currentIndex = 0;
+        const fontSize = 24;
+        const resultY = 120; // 結果字串顯示的 Y 座標
+        
+        function setupAnimation() {
+            currentIndex = 0;
+            string1Chars = [];
+            string2Chars = [];
+            
             const string1 = document.getElementById("string1").value;
             const string2 = document.getElementById("string2").value;
-            let result = "";
-            let coloredResult = "";
 
-            const maxLength = Math.max(string1.length, string2.length);
+            ctx.font = `bold ${fontSize}px Inter`;
+            
+            // 初始化第一個字串的字元物件
+            let currentX = 20;
+            for (const char of string1) {
+                string1Chars.push({ char, x: currentX, y: 30, color: '#3B82F6', targetX: currentX, targetY: 30 });
+                currentX += ctx.measureText(char).width;
+            }
+            
+            // 初始化第二個字串的字元物件
+            currentX = 20;
+            for (const char of string2) {
+                string2Chars.push({ char, x: currentX, y: 65, color: '#EF4444', targetX: currentX, targetY: 65 });
+                currentX += ctx.measureText(char).width;
+            }
+            
+            nextStepBtn.disabled = string1.length === 0 && string2.length === 0;
+            nextStepBtn.innerText = '開始穿插';
+            explanationDiv.innerText = '準備好了嗎？請點擊「開始穿插」！';
+            
+            animate();
+        }
 
-            for (let i = 0; i < maxLength; i++) {
-                if (i < string1.length) {
-                    result += string1[i];
-                    coloredResult += `<span style="color: blue;">${string1[i]}</span>`;
-                }
-                if (i < string2.length) {
-                    result += string2[i];
-                    coloredResult += `<span style="color: red;">${string2[i]}</span>`;
-                }
+        function nextStep() {
+            const str1 = document.getElementById("string1").value;
+            const str2 = document.getElementById("string2").value;
+            if (currentIndex >= Math.max(str1.length, str2.length)) return;
+
+            nextStepBtn.innerText = `下一步 (${currentIndex + 1})`;
+            
+            // 計算結果區的總寬度，以實現置中
+            const totalResultWidth = ctx.measureText(str1 + str2).width;
+            let resultX = (canvas.width - totalResultWidth) / 2;
+
+            // 重新計算所有已在結果區的字元位置
+            for (let i = 0; i < currentIndex; i++) {
+                if (i < string1Chars.length) resultX += ctx.measureText(string1Chars[i].char).width;
+                if (i < string2Chars.length) resultX += ctx.measureText(string2Chars[i].char).width;
             }
 
-            document.getElementById("result").innerText = "穿插編碼結果: " + result;
-            document.getElementById("coloredResult").innerHTML = "顏色標示結果: " + coloredResult;
+            // 移動當前步驟的字元
+            let stepExplanationParts = [];
+            if (currentIndex < string1Chars.length) {
+                const charObj = string1Chars[currentIndex];
+                charObj.targetX = resultX;
+                charObj.targetY = resultY;
+                resultX += ctx.measureText(charObj.char).width;
+                stepExplanationParts.push(`取出藍色字串的 '${charObj.char}'`);
+            }
+            
+            if (currentIndex < string2Chars.length) {
+                const charObj = string2Chars[currentIndex];
+                charObj.targetX = resultX;
+                charObj.targetY = resultY;
+                stepExplanationParts.push(`取出紅色字串的 '${charObj.char}'`);
+            }
+            
+            explanationDiv.innerHTML = `<p>第 ${currentIndex + 1} 步：${stepExplanationParts.join('，')}。</p>`;
+            currentIndex++;
+            
+            if (currentIndex >= Math.max(str1.length, str2.length)) {
+                nextStepBtn.disabled = true;
+                nextStepBtn.innerText = '完成';
+                
+                // 產生最終密碼
+                let finalPassword = "";
+                const maxLength = Math.max(str1.length, str2.length);
+                for (let i = 0; i < maxLength; i++) {
+                    if (i < str1.length) finalPassword += str1[i];
+                    if (i < str2.length) finalPassword += str2[i];
+                }
+
+                // 顯示總結訊息
+                const finalMessage = `
+                    <div class="text-center px-2">
+                        <p class="font-bold text-base">穿插完畢！新密碼是：<span class="text-green-600 font-mono">${finalPassword}</span></p>
+                        <p class="text-sm text-gray-500 mt-1">這就是穿插法：將兩組有意義的資訊，重新編碼成一個全新的密碼。</p>
+                    </div>
+                `;
+                explanationDiv.innerHTML = finalMessage;
+            }
         }
+        
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            let allChars = [...string1Chars, ...string2Chars];
+            
+            for (const charObj of allChars) {
+                // 使用緩動效果讓移動更平滑
+                charObj.x += (charObj.targetX - charObj.x) * 0.1;
+                charObj.y += (charObj.targetY - charObj.y) * 0.1;
+                
+                ctx.fillStyle = charObj.color;
+                ctx.globalAlpha = (charObj.y === charObj.targetY && charObj.y !== resultY) ? 0.5 : 1.0; // 在原位的字元變淡
+                ctx.fillText(charObj.char, charObj.x, charObj.y);
+            }
+            ctx.globalAlpha = 1.0; // 恢復透明度
+
+            requestAnimationFrame(animate);
+        }
+
+        window.onload = setupAnimation;
     </script>
 </body>
 </html>
+
+
+
