@@ -60,6 +60,12 @@
         #leaderboard-body::-webkit-scrollbar-thumb:hover {
             background: #64748b; /* slate-500 */
         }
+        /* Disabled button style */
+        button:disabled {
+            background-color: #94a3b8;
+            cursor: not-allowed;
+            transform: none;
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center justify-center p-4">
@@ -117,7 +123,7 @@
                     <input type="text" id="studentInput" class="w-full max-w-md mx-auto p-3 border-2 border-gray-300 rounded-lg text-xl text-center focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
                 </div>
                 <div class="mt-6">
-                    <button onclick="checkAnswer()" class="w-full max-w-xs bg-blue-600 text-white font-bold py-3 px-6 rounded-lg text-xl hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-transform transform hover:scale-105">
+                    <button id="checkAnswerBtn" onclick="checkAnswer()" class="w-full max-w-xs bg-blue-600 text-white font-bold py-3 px-6 rounded-lg text-xl hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-transform transform hover:scale-105">
                         Check Answer
                     </button>
                     <p id="result" class="mt-4 text-lg font-semibold min-h-[5em]"></p>
@@ -208,6 +214,7 @@
                 nicknameInput: document.getElementById('nicknameInput'),
                 leaderboardBody: document.getElementById('leaderboard-body'),
                 leaderboardTitle: document.getElementById('leaderboardTitle'),
+                checkAnswerBtn: document.getElementById('checkAnswerBtn'),
             }
         };
 
@@ -281,17 +288,16 @@
             game.elements.card.classList.remove('shake');
             game.isDecryptMode = game.elements.modeToggle.checked;
             
-            let currentLevel, modeName, allLevelsCompleted;
+            let currentLevel, modeName;
             if (game.isDecryptMode) {
                 currentLevel = game.decryptLevel;
                 modeName = '解密';
-                allLevelsCompleted = currentLevel > game.totalLevels;
             } else {
                 currentLevel = game.encryptLevel;
                 modeName = '加密';
-                allLevelsCompleted = currentLevel > game.totalLevels;
             }
 
+            const allLevelsCompleted = currentLevel > game.totalLevels;
             game.elements.levelDisplay.innerText = `${modeName} ${Math.min(currentLevel, game.totalLevels)} / ${game.totalLevels}`;
 
             if (allLevelsCompleted) {
@@ -299,11 +305,13 @@
                 game.elements.shiftValue.innerText = "-";
                 game.elements.result.innerHTML = `<span class="text-green-600">${modeName}模式已全數通關！</span>`;
                 game.elements.studentInput.disabled = true;
+                game.elements.checkAnswerBtn.disabled = true;
                 stopTimer();
                 return;
             }
             
             game.elements.studentInput.disabled = false;
+            game.elements.checkAnswerBtn.disabled = false;
             game.currentShift = ((currentLevel - 1) % 4) + 2;
             const randomText = generateRandomString();
             
@@ -338,6 +346,9 @@
         
         function handleCorrectAnswer() {
             stopTimer();
+            game.elements.studentInput.disabled = true;
+            game.elements.checkAnswerBtn.disabled = true;
+
             if (game.isDecryptMode) {
                 if (game.decryptLevel <= game.totalLevels) game.decryptLevel++;
             } else {
@@ -353,6 +364,7 @@
         function handleIncorrectAnswer(studentAnswer) {
             stopTimer();
             game.elements.studentInput.disabled = true;
+            game.elements.checkAnswerBtn.disabled = true;
             game.elements.card.classList.add('shake');
             let feedback = `<span class="text-red-600">Incorrect. (不正確)</span><br><br>Correct Answer (正確答案):<br><strong class="text-blue-600 font-mono">${game.correctAnswer}</strong><br><br>Your Answer (你的答案):<br>`;
             let highlightedAnswer = '';
