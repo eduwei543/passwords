@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Caesar Cipher Practice (Improved)</title>
+    <title>Caesar Cipher Practice (Final Version)</title>
     <!-- Tailwind CSS for modern styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Confetti library for celebrations -->
@@ -67,20 +67,18 @@
     <!-- Nickname Modal -->
     <div id="nicknameModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50">
         <div class="bg-white p-8 rounded-xl shadow-2xl text-center w-full max-w-sm">
-            <h2 class="text-2xl font-bold mb-4 text-gray-800">歡迎挑戰！</h2>
+            <h2 class="text-2xl font-bold mb-2 text-gray-800">歡迎挑戰！</h2>
             <p class="mb-6 text-gray-600">
-                請輸入你的「班級座號+姓名」<br>
-                <span class="text-sm">(範例: 70135李阿哲)</span><br>
-                讓大家在排行榜上看到你！
+                請輸入你的「班級座號+姓名」<br>範例: 70135 李阿哲
             </p>
-            <input type="text" id="nicknameInput" class="w-full p-3 border-2 border-gray-300 rounded-lg text-lg text-center focus:ring-2 focus:ring-blue-500" placeholder="你的班級座號姓名..." maxlength="10">
+            <input type="text" id="nicknameInput" class="w-full p-3 border-2 border-gray-300 rounded-lg text-lg text-center focus:ring-2 focus:ring-blue-500" placeholder="你的班級座號姓名..." maxlength="15">
             <button onclick="saveNicknameAndStart()" class="w-full mt-6 bg-blue-600 text-white font-bold py-3 rounded-lg text-lg hover:bg-blue-700 transition">開始挑戰</button>
         </div>
     </div>
 
     <!-- Main Card Container -->
     <div id="card" class="w-full max-w-5xl bg-white rounded-2xl shadow-2xl p-6 md:p-10 text-center transition-transform duration-500 hidden">
-        <div id="designedBy" class="absolute top-4 right-4 text-xs text-gray-400">Sljs水林國中資訊科技-by WEI</div>
+        <div id="designedBy" class="absolute top-4 right-4 text-xs text-gray-400">Designed by: WEI & Gemini</div>
         
         <h1 class="text-3xl md:text-4xl font-bold text-blue-600 mb-2">Caesar Cipher Practice</h1>
         <h2 class="text-xl md:text-2xl font-semibold text-gray-700 mb-6">凱撒密碼 (字母位移法)</h2>
@@ -171,7 +169,7 @@
     <script type="module">
         // Firebase Imports
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, onSnapshot, collection, serverTimestamp, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- Global State & Config ---
@@ -189,6 +187,7 @@
             totalAttempts: 0,
             userId: null,
             nickname: '',
+            leaderboardEnabled: true,
             elements: {
                 card: document.getElementById('card'),
                 originalText: document.getElementById('originalText'),
@@ -216,11 +215,10 @@
 
         // --- Firebase Config ---
         let db, auth;
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         
         // 【重要】這是你專屬的 Firebase 設定碼
         const firebaseConfig = {
-            apiKey: "AIzaSyAhdjc3Jvm2_txjBbZkfAzx4MuLI8io4NA",
+            apiKey: "AIzaSyCIetB78_g-W4d9FgHRX96cWV2Jw4w-lcE",
             authDomain: "caesar-cipher-game.firebaseapp.com",
             projectId: "caesar-cipher-game",
             storageBucket: "caesar-cipher-game.appspot.com",
@@ -231,44 +229,29 @@
         // --- Firebase Initialization & Auth ---
         async function initFirebase() {
             try {
-                const effectiveConfig = (typeof __firebase_config !== 'undefined' && __firebase_config)
-                    ? JSON.parse(__firebase_config)
-                    : firebaseConfig;
-                
-                if (!effectiveConfig || !effectiveConfig.projectId) {
-                    throw new Error("Firebase configuration is missing or invalid.");
-                }
-
-                const app = initializeApp(effectiveConfig);
+                const app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
                 setLogLevel('error');
 
-                return new Promise((resolve, reject) => {
-                    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-                        if (user) {
-                            // 使用者已登入 (無論是自訂 token 或匿名)
-                            game.userId = user.uid;
-                            unsubscribe(); // 成功取得 user ID 後就停止監聽
-                            resolve();
-                        }
-                    });
-
-                    // 根據環境決定登入方式
-                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                        signInWithCustomToken(auth, __initial_auth_token).catch(error => {
-                            console.error("Custom token sign-in failed. This might happen if the token is invalid or expired.", error);
-                            // 若 token 失效， fallback 到匿名登入
-                            signInAnonymously(auth).catch(reject);
-                        });
-                    } else {
-                        // 在 GitHub Pages 或一般網站上，使用匿名登入
-                        signInAnonymously(auth).catch(reject);
-                    }
-                });
+                // Attempt to sign in anonymously
+                await signInAnonymously(auth);
+                game.userId = auth.currentUser.uid;
+                game.leaderboardEnabled = true;
+                
             } catch (error) {
-                console.error("Firebase initialization failed:", error);
-                document.querySelector("#leaderboard-body").innerHTML = `<p class="text-center text-red-500 p-4">排行榜連線失敗</p>`;
+                // Check if the error is due to an unauthorized domain
+                if (error.code === 'auth/requests-from-referer-are-blocked' || error.message.includes('auth/requests-from-referer')) {
+                    console.warn("Leaderboard disabled: Domain not authorized.", window.location.href);
+                    game.leaderboardEnabled = false;
+                    document.querySelector("#leaderboard-body").innerHTML = `<p class="text-center text-gray-500 p-4">排行榜因網域未授權而無法使用。遊戲仍可正常進行。</p>`;
+                    document.querySelector("#leaderboardTitle").innerText = "排行榜 (已停用)";
+                } else {
+                    // Handle other Firebase initialization errors
+                    console.error("Firebase initialization failed:", error);
+                    game.leaderboardEnabled = false;
+                    document.querySelector("#leaderboard-body").innerHTML = `<p class="text-center text-red-500 p-4">排行榜連線失敗</p>`;
+                }
             }
         }
 
@@ -438,12 +421,14 @@
         
         // --- Leaderboard ---
         function listenForLeaderboardUpdates() {
-            if (!db) return; // Don't listen if firebase failed to init
+            if (!db || !game.leaderboardEnabled) return; 
             const year = new Date().getFullYear();
             const leaderboardCollectionName = `leaderboard-${year}`;
             game.elements.leaderboardTitle.innerText = `${year} 即時排行榜`;
 
+            const appId = "caesar-cipher-game-leaderboard";
             const leaderboardCollection = collection(db, `/artifacts/${appId}/public/data/${leaderboardCollectionName}`);
+            
             onSnapshot(leaderboardCollection, (snapshot) => {
                 const players = [];
                 snapshot.forEach(doc => players.push({ id: doc.id, ...doc.data() }));
@@ -497,9 +482,10 @@
         }
         
         async function updatePlayerScoreInFirestore() {
-            if (!db || !game.userId || !game.nickname) return;
+            if (!db || !game.userId || !game.nickname || !game.leaderboardEnabled) return;
             const year = new Date().getFullYear();
             const leaderboardCollectionName = `leaderboard-${year}`;
+            const appId = "caesar-cipher-game-leaderboard";
             const playerDocRef = doc(db, `/artifacts/${appId}/public/data/${leaderboardCollectionName}`, game.userId);
             const playerData = {
                 nickname: game.nickname,
@@ -520,7 +506,7 @@
             const nickname = game.elements.nicknameInput.value.trim();
             if (nickname) {
                 game.nickname = nickname;
-                localStorage.setItem(`cipher_nickname_${appId}`, nickname);
+                localStorage.setItem(`cipher_nickname`, nickname);
                 game.elements.nicknameModal.classList.add('hidden');
                 game.elements.card.classList.remove('hidden');
                 updatePlayerScoreInFirestore();
@@ -534,20 +520,19 @@
         
         // --- Initial Load ---
         async function main() {
-            try {
-                await initFirebase();
-                const savedNickname = localStorage.getItem(`cipher_nickname_${appId}`);
-                if (savedNickname) {
-                    game.nickname = savedNickname;
-                    game.elements.nicknameModal.classList.add('hidden');
-                    game.elements.card.classList.remove('hidden');
-                    setupNewRound();
-                    updateProgressUI();
-                    game.elements.attemptsDisplay.innerText = game.totalAttempts;
-                }
+            await initFirebase();
+            const savedNickname = localStorage.getItem(`cipher_nickname`);
+            if (savedNickname) {
+                game.nickname = savedNickname;
+                game.elements.nicknameModal.classList.add('hidden');
+                game.elements.card.classList.remove('hidden');
+                setupNewRound();
+                updateProgressUI();
+                game.elements.attemptsDisplay.innerText = game.totalAttempts;
+            }
+            
+            if (game.leaderboardEnabled) {
                 listenForLeaderboardUpdates();
-            } catch (error) {
-                console.error("Could not start the game due to Firebase error.", error);
             }
         }
 
