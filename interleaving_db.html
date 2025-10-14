@@ -167,9 +167,8 @@
     </div>
 
     <script type="module">
-        // Firebase Imports
+        // Firebase Imports (No Auth needed anymore)
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, onSnapshot, collection, serverTimestamp, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- Global State & Config ---
@@ -185,9 +184,8 @@
             currentShift: 0,
             isDecryptMode: false,
             totalAttempts: 0,
-            userId: null,
+            userId: null, // Will be generated locally
             nickname: '',
-            leaderboardEnabled: true,
             elements: {
                 card: document.getElementById('card'),
                 originalText: document.getElementById('originalText'),
@@ -214,9 +212,7 @@
         };
 
         // --- Firebase Config ---
-        let db, auth;
-        
-        // 【重要】這是你專屬的 Firebase 設定碼
+        let db;
         const firebaseConfig = {
             apiKey: "AIzaSyCIetB78_g-W4d9FgHRX96cWV2Jw4w-lcE",
             authDomain: "caesar-cipher-game.firebaseapp.com",
@@ -226,33 +222,28 @@
             appId: "1:654107462649:web:8d0512e8b5bf9b19714b28"
         };
        
-        // --- Firebase Initialization & Auth ---
-        async function initFirebase() {
+        // --- Firebase Initialization ---
+        function initFirebase() {
             try {
                 const app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
-                auth = getAuth(app);
                 setLogLevel('error');
-
-                // Attempt to sign in anonymously
-                await signInAnonymously(auth);
-                game.userId = auth.currentUser.uid;
-                game.leaderboardEnabled = true;
-                
             } catch (error) {
-                // Check if the error is due to an unauthorized domain
-                if (error.code === 'auth/requests-from-referer-are-blocked' || error.message.includes('auth/requests-from-referer')) {
-                    console.warn("Leaderboard disabled: Domain not authorized.", window.location.href);
-                    game.leaderboardEnabled = false;
-                    document.querySelector("#leaderboard-body").innerHTML = `<p class="text-center text-gray-500 p-4">排行榜因網域未授權而無法使用。遊戲仍可正常進行。</p>`;
-                    document.querySelector("#leaderboardTitle").innerText = "排行榜 (已停用)";
-                } else {
-                    // Handle other Firebase initialization errors
-                    console.error("Firebase initialization failed:", error);
-                    game.leaderboardEnabled = false;
-                    document.querySelector("#leaderboard-body").innerHTML = `<p class="text-center text-red-500 p-4">排行榜連線失敗</p>`;
-                }
+                console.error("Firebase initialization failed:", error);
+                document.querySelector("#leaderboard-body").innerHTML = `<p class="text-center text-red-500 p-4">排行榜連線失敗</p>`;
+                return false;
             }
+            return true;
+        }
+        
+        // --- Local User ID Generation ---
+        function getOrSetUserId() {
+            let userId = localStorage.getItem('caesarCipherUserId');
+            if (!userId) {
+                userId = crypto.randomUUID();
+                localStorage.setItem('caesarCipherUserId', userId);
+            }
+            game.userId = userId;
         }
 
         // --- Core Logic ---
@@ -421,7 +412,7 @@
         
         // --- Leaderboard ---
         function listenForLeaderboardUpdates() {
-            if (!db || !game.leaderboardEnabled) return; 
+            if (!db) return; 
             const year = new Date().getFullYear();
             const leaderboardCollectionName = `leaderboard-${year}`;
             game.elements.leaderboardTitle.innerText = `${year} 即時排行榜`;
@@ -482,7 +473,7 @@
         }
         
         async function updatePlayerScoreInFirestore() {
-            if (!db || !game.userId || !game.nickname || !game.leaderboardEnabled) return;
+            if (!db || !game.userId || !game.nickname) return;
             const year = new Date().getFullYear();
             const leaderboardCollectionName = `leaderboard-${year}`;
             const appId = "caesar-cipher-game-leaderboard";
@@ -519,8 +510,10 @@
         }
         
         // --- Initial Load ---
-        async function main() {
-            await initFirebase();
+        function main() {
+            const firebaseReady = initFirebase();
+            getOrSetUserId();
+
             const savedNickname = localStorage.getItem(`cipher_nickname`);
             if (savedNickname) {
                 game.nickname = savedNickname;
@@ -530,8 +523,8 @@
                 updateProgressUI();
                 game.elements.attemptsDisplay.innerText = game.totalAttempts;
             }
-            
-            if (game.leaderboardEnabled) {
+
+            if (firebaseReady) {
                 listenForLeaderboardUpdates();
             }
         }
